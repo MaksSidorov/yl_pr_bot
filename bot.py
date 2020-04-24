@@ -1,58 +1,31 @@
-from telegram.ext import Updater, MessageHandler, Filters
-from telegram.ext import CallbackContext, CommandHandler
-from telegram import ReplyKeyboardMarkup
+import urllib.request
+ex = 'https://www.kinopoisk.ru/top/navigator/m_act[rating]/6.6%3A/order/rating/page/7/perpage/200/#results'
 
-TOKEN = '1087605777:AAFlH7yNos7nSb3GplRIFp7IazK8fYo_JDU'
-IP = '208.113.221.17'
-PORT = '31027'
+ex1 = 'https://www.kinopoisk.ru/top/navigator/m_act%5Brating%5D/6.4%3A/m_act%5Bis_film%5D/on/m_act%5Bis_mult%5D/on/order/rating/#results'
 
-
-# Определяем функцию-обработчик сообщений.
-# У неё два параметра, сам бот и класс updater, принявший сообщение.
-def echo(update, context):
-    # У объекта класса Updater есть поле message,
-    # являющееся объектом сообщения.
-    # У message есть поле text, содержащее текст полученного сообщения,
-    # а также метод reply_text(str),
-    # отсылающий ответ пользователю, от которого получено сообщение.
-    update.message.reply_text('Я получил исходное сообщение ' + update.message.text)
+ex2 = 'https://www.kinopoisk.ru/top/navigator/m_act%5Brating%5D/6.4%3A/m_act%5Bis_film%5D/on/order/rating/page/1/perpage/200/#results'
+import requests
+from fake_useragent import UserAgent
 
 
-def main():
-    # REQUEST_KWARGS = {
-    #     'proxy_url': 'socks5h://{}:{}'.format(IP, PORT),
-    #     # Optional, if you need authentication:
-    #     'urllib3_proxy_kwargs': {
-    #         'assert_hostname': 'False',
-    #         'cert_reqs': 'CERT_NONE'
-    #         # 'username': 'user',
-    #         # 'password': 'password'
-    #     }
-    # }
-    # Создаём объект updater.
-    # Вместо слова "TOKEN" надо разместить полученный от @BotFather токен
-    updater = Updater(token=TOKEN, use_context=True, request_kwargs=REQUEST_KWARGS)
+# page_link = 'https://www.kinopoisk.ru/top/navigator/m_act[rating]/7.8%3A/order/rating/page/6/perpage/50/#results'
+# page = requests.get('https://www.kinopoisk.ru/film/447301/', headers={'User-Agent': UserAgent().chrome})
+#
+#
+# with open("test.html", "wb") as fh:
+#     fh.write(page.content)
+#
+# exit(0)
 
-    # Получаем из него диспетчер сообщений.
-    dp = updater.dispatcher
+from bs4 import BeautifulSoup
 
-    # Создаём обработчик сообщений типа Filters.text
-    # из описанной выше функции echo()
-    # После регистрации обработчика в диспетчере
-    # эта функция будет вызываться при получении сообщения
-    # с типом "текст", т. е. текстовых сообщений.
-    text_handler = MessageHandler(Filters.text, echo)
+with open("test.html", "rb") as f:
+    contents = f.read()
 
-    # Регистрируем обработчик в диспетчере.
-    dp.add_handler(text_handler)
-    # Запускаем цикл приема и обработки сообщений.
-    updater.start_polling()
+    soup = BeautifulSoup(contents, 'lxml')
 
-    # Ждём завершения приложения.
-    # (например, получения сигнала SIG_TERM при нажатии клавиш Ctrl+C)
-    updater.idle()
-
-
-# Запускаем функцию main() в случае запуска скрипта.
-if __name__ == '__main__':
-    main()
+    # print(soup.find("ul", attrs={ "id" : "mylist"}))
+    items = soup.find("span", {'itemprop': 'genre'}).find_all('a')
+    for i in items:
+        print(i.text)
+    print(items)
