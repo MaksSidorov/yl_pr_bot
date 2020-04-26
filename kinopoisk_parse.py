@@ -4,10 +4,6 @@ from bs4 import BeautifulSoup
 from data import db_session
 from data import films
 import time
-
-not_in_films = []
-not_in_pages = []
-
 import socks
 import socket
 
@@ -28,21 +24,15 @@ def parse_top_films(path='', numner_pages=0):
         soup = BeautifulSoup(page.content, 'lxml')
         items = soup.find_all("div", {'class': 'name'})
         films_page = []
-        flag = True
-        with open("lst.html", "wb") as fh:
-            fh.write(page.content)
         for item in items:
             title = item.find('a').text
             film_id = item.find('a').get('href').split('/')[-2]
-            print(film_id)
             flag = False
             films_page.append(get_film_info(title=title, film_id=film_id))
             add_in_db([films_page[-1]])
-            time.sleep(10)
+            time.sleep(12)
 
-        time.sleep(10)
-        if flag:
-            not_in_pages.append(str(page_num))
+        time.sleep(12)
 
         films_list.extend(films_page)
 
@@ -55,11 +45,10 @@ def parse_film_page(film_id=''):
     page = requests.get(kino_path, headers=headers)
     soup = BeautifulSoup(page.content, 'lxml')
     print(kino_path)
-    with open("page.html", "wb") as fh:
-        fh.write(page.content)
     return soup
 
 
+# Функция для получения информации фильма для БД
 def get_film_info(title='', film_id=''):
     soup = parse_film_page(film_id=film_id)
     film_info = [film_id, title]
@@ -79,18 +68,17 @@ def get_film_info(title='', film_id=''):
     except:
         print('НЕ удалось', title)
         film_info = []
-        not_in_films.append(str(film_id))
 
     print(film_info)
     return film_info
 
 
+# Добавление в БД
 def add_in_db(data):
     if data == [[]]:
         return 1
     db_session.global_init("db/kinobot_data.sqlite")
     for film_data in data:
-        print(film_data)
         film = films.Film()
         film.film_id = int(film_data[0])
         film.title = film_data[1]
@@ -103,21 +91,25 @@ def add_in_db(data):
         session.commit()
 
 
+# Получить режиссера
 def get_director(film_id='447301'):
     soup = parse_film_page(film_id=film_id)
     return soup.find("td", {'itemprop': 'director'}).find('a').text
 
 
+# Получить ссылку на постер
 def get_poster(film_id='447301'):
     soup = parse_film_page(film_id=film_id)
     return soup.find("img", {'itemprop': 'image'}).get('src')
 
 
+# Получить краткое описание
 def get_description(film_id='447301'):
     soup = parse_film_page(film_id=film_id)
     return soup.find("div", {'itemprop': 'description'}).text
 
 
+# Собрать основную информацию о фильме
 def get_all_info(film_id='447301'):
     soup = parse_film_page(film_id=film_id)
     info = []
@@ -129,14 +121,20 @@ def get_all_info(film_id='447301'):
     return ['\n'.join(descr).format(*info), soup.find("img", {'itemprop': 'image'}).get('src')]
 
 
+# Получение отзывов о фильме
+def get_reviews(film_id='447301'):
+    soup = parse_film_page(film_id=film_id)
+    rev = soup.find_all("div", {'class': 'userReview'})
+    reviews = []
+    for review in rev[:2]:
+        review_title = review.find("p", {'class': 'sub_title'}).text
+        review_body = review.find("span", {'itemprop': 'reviewBody'}).text.replace('\n\r', '').replace('\r\n', '')
+        reviews.append(review_title + '\n' + review_body)
+    return reviews
+
+
 if __name__ == '__main__':
-    parse_top_films(
-        path='https://www.kinopoisk.ru/top/navigator/m_act%5Brating%5D/6.4%3A/m_act%5Bis_film%5D/on/order/rating/page/{}/perpage/200/#results',
-        numner_pages=20)
-
-    with open('not_films.txt', 'w') as nf:
-        nf.write('\n'.join(not_in_films))
-
-    with open('not_page.txt', 'w') as np:
-        np.write('\n'.join(not_in_pages))
-    # print(get_description().replace('<br>', '\n'))
+    # parse_top_films(
+    #     path='https://www.kinopoisk.ru/top/navigator/m_act%5Brating%5D/6.4%3A/m_act%5Bis_film%5D/on/order/rating/page/{}/perpage/200/#results',
+    #     numner_pages=20)
+    get_reviews()

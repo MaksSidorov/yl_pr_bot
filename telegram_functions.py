@@ -5,10 +5,13 @@ import requests
 from kinopoisk_parse import *
 
 
-def start(update, context):
-    update.message.reply_text(
-        "Привет! Я кино-бот. Я помогу тебе выбрать фильм, чтобы "
-        "подробнее узнать о финциях напищите /help или нажмите кнопку 'Помощь'")
+# def start(update, context):
+#     update.message.reply_text(
+#         "Привет! Я кино-бот. Я помогу тебе выбрать фильм, чтобы "
+#         "подробнее узнать о финциях напищите /help или нажмите кнопку 'Помощь'")
+
+
+
 
 
 def film_info(update, context):
