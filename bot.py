@@ -1,7 +1,5 @@
 from telegram.ext import Updater, MessageHandler, Filters
-from telegram.ext import CallbackContext, CommandHandler, ConversationHandler
-from telegram import ReplyKeyboardMarkup
-from telegram import ReplyKeyboardRemove, InlineKeyboardButton
+from telegram.ext import CallbackContext
 import socks
 import socket
 from telegram_functions import *
