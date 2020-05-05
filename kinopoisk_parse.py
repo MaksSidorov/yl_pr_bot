@@ -115,7 +115,10 @@ def get_all_info(film_id='447301'):
     info = []
     descr = ['{} - {} ', 'Режиссер - {}', '{}']
     info.append(soup.find("span", {'class': 'moviename-title-wrapper'}).text)
-    info.append(float(soup.find("meta", {'itemprop': 'ratingValue'}).get('content')))
+    try:
+        info.append(float(soup.find("meta", {'itemprop': 'ratingValue'}).get('content')))
+    except:
+        info.append(0.0)
     info.append(soup.find("td", {'itemprop': 'director'}).find('a').text)
     info.append(soup.find("div", {'itemprop': 'description'}).text)
     return ['\n'.join(descr).format(*info), soup.find("img", {'itemprop': 'image'}).get('src')]
@@ -133,8 +136,26 @@ def get_reviews(film_id='447301'):
     return reviews
 
 
+def kp_film_find(title='начало'):
+    kino_path = 'https://www.kinopoisk.ru/index.php?kp_query={}'.format(title)
+    page = requests.get(kino_path, headers=headers)
+    soup = BeautifulSoup(page.content, 'lxml')
+    res = [[], []]
+    items = soup.find_all('p', {'class': 'name'})
+    c = 0
+    for item in items:
+        c += 1
+        kino_title = item.find('a').text
+        year = item.find('span').text
+        res[1].append(item.find('a').get('data-id'))
+        res[0].append('{}. {}({})'.format(c, kino_title, year))
+        if c >= 3:
+            break
+    return res
+
+
 if __name__ == '__main__':
     # parse_top_films(
     #     path='https://www.kinopoisk.ru/top/navigator/m_act%5Brating%5D/6.4%3A/m_act%5Bis_film%5D/on/order/rating/page/{}/perpage/200/#results',
     #     numner_pages=20)
-    get_reviews()
+    print(kp_film_find())
