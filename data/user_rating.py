@@ -2,6 +2,7 @@ import sqlalchemy
 from .db_session import SqlAlchemyBase
 
 
+# Класс чтобы пользователи могли ставить оценки
 class UserRating(SqlAlchemyBase):
     __tablename__ = 'user_rating'
 

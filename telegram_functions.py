@@ -28,6 +28,7 @@ def stop(update, context):
     return ConversationHandler.END
 
 
+# Выбор направления
 def first_response(update, context):
     resp = update.message.text
     if resp == 'Найти фильм':
@@ -46,7 +47,9 @@ def first_response(update, context):
 # Поиск фильмов
 def find_film(update, context):
     title = update.message.text
+    # Поиск фильма по названию на КП
     res = kp_film_find(title.lower())
+    # Если функция возвращает 3 фильма их выводят, иначе вывод сообщение об ошибке
     if len(res[0]) == 3:
         context.user_data['res'] = res
         update.message.reply_text(
@@ -60,12 +63,14 @@ def find_film(update, context):
         return 8
 
 
-#
+# Информация о фильме
 def film_info(update, context):
     film_ch = update.message.text
+    # Выбор фильма
     if film_ch in ['1', '2', '3']:
         context.user_data['film_id'] = context.user_data['res'][1][int(film_ch) - 1]
         context.user_data['film_title'] = context.user_data['res'][0][int(film_ch) - 1]
+        # Информация о фильме [<крастое описание фильма>, <url а постер>]
         inf = get_all_info(film_id=context.user_data['film_id'])
         update.message.reply_text(inf[0], reply_markup=markup_film1)
         context.bot.sendPhoto(chat_id=update.message.chat_id, photo=inf[1])
@@ -79,6 +84,7 @@ def film_info(update, context):
         update.message.reply_text('Используйте кнопки')
 
 
+# Выбор варианта
 def second_response(update, context):
     resp = update.message.text
     if resp == 'В главное меню':
@@ -100,14 +106,17 @@ def second_response(update, context):
         update.message.reply_text('Используйте кнопки')
 
 
+# Добавлние оценок фильмам
 def put_rating(update, context):
     rating = update.message.text
+    # Если оценка с неправильные типом или не в промежутке от 0 до 10, она становится 0
     try:
         float_rating = float(rating)
     except TypeError as E:
         float_rating = 0.0
     if float_rating > 10 or float_rating < 0:
         float_rating = 0.0
+    # Добавление оценки
     db_session.global_init("db/kinobot_data.sqlite")
     user_r = user_rating.UserRating()
     user_r.film_id = context.user_data['film_id']
@@ -126,12 +135,14 @@ def put_rating(update, context):
     return 4
 
 
+# Рекомендация фильма
 def choose_genre(update, context):
     genre = update.message.text.lower()
+    # Проверка жанра на наличие
     if genre.lower() in GENRES:
+        # Подбор фильма в БД
         db_session.global_init("db/kinobot_data.sqlite")
         session = db_session.create_session()
-        print(221)
         if genre == 'любой':
             films_list = session.query(films.Film).order_by(films.Film.rating.desc()).all()
         else:
@@ -140,18 +151,17 @@ def choose_genre(update, context):
                 films.Film.rating.desc()).all()
         c = 0
         filmss = []
-        print(films_list[0])
+        # Выбираем первые три фильма отсортированных по рейтингу, которые пользователь не оценил
         for film in films_list:
-            f = session.query(user_rating.UserRating).filter(user_rating.UserRating.film_id == film.film_id,
-                                                             user_rating.UserRating.user_id == update.message.from_user.id).all()
+            f = session.query(user_rating.UserRating). \
+                filter(user_rating.UserRating.film_id == film.film_id,
+                       user_rating.UserRating.user_id == update.message.from_user.id).all()
 
             if len(f) == 0:
                 c += 1
                 filmss.append(film)
-            print(c)
             if c >= 3:
                 break
-        print(filmss)
         update.message.reply_text(
             "Какой фильм выберите \n1. {} - {} \n2. {} - {} \n3. {} - {}".format(filmss[0].title, filmss[0].rating,
                                                                                  filmss[1].title,
@@ -180,6 +190,7 @@ def third_response(update, context):
         update.message.reply_text('Используйте кнопки')
 
 
+# Выбор устройста с которого сидит человек
 def location_kino(update, context):
     resp = update.message.text
     if resp == 'С мобильной версии':
@@ -199,11 +210,13 @@ def location_kino(update, context):
         update.message.reply_text('Используйте кнопки')
 
 
+# Поиск кинотеатра с телефона
 def location_kino_phone(update, context):
     resp = update.message.location
     search_api_server = "https://search-maps.yandex.ru/v1/"
     api_key = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
 
+    # Передаем координаты пользователя
     address_ll = "{},{}".format(resp['longitude'], resp['latitude'])
 
     search_params = {
@@ -224,6 +237,7 @@ def location_kino_phone(update, context):
     return 4
 
 
+# Поиск кинотеатра с Telegram Desktop
 def location_kino_desktop(update, context):
     resp = update.message.text
     toponym_to_find = " ".join(resp.split())
@@ -265,7 +279,6 @@ def location_kino_desktop(update, context):
     return 4
 
 
-# KeyboardButton(text='Найти ближ. кинотеатр', request_location=True)
 # Клавиатуры
 reply_keyboard_start = [['Найти фильм', 'Порекомендовать фильм'], ['Найти ближ. кинотеатр']]
 markup_start = ReplyKeyboardMarkup(reply_keyboard_start, one_time_keyboard=True)
@@ -292,7 +305,7 @@ markup_film2 = ReplyKeyboardMarkup(reply_keyboard_film2, one_time_keyboard=True)
 reply_keyboard_loc = [['С мобильной версии', 'С Telegram Desktop'], ['В главное меню']]
 markup_loc = ReplyKeyboardMarkup(reply_keyboard_loc, one_time_keyboard=True)
 
-reply_keyboard_loc_phone = [[KeyboardButton(text='Геолокация', request_location=True), 'В главное меню']]
+reply_keyboard_loc_phone = [[KeyboardButton(text='Дать геолокацию', request_location=True), 'В главное меню']]
 markup_loc_phone = ReplyKeyboardMarkup(reply_keyboard_loc_phone, one_time_keyboard=True)
 # Диалоги
 conv_handler = ConversationHandler(

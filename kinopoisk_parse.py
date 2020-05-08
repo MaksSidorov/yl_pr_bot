@@ -7,9 +7,11 @@ import time
 import socks
 import socket
 
+# Подключение через Тор браузер
 socks.set_default_proxy(socks.SOCKS5, "localhost", 9150)
 socket.socket = socks.socksocket
 
+# header чтобы имитировать пользователя на КП
 headers = {
     'User-Agent': UserAgent().chrome
 }
@@ -18,20 +20,20 @@ headers = {
 # Функция для парсинга списка фильмов
 def parse_top_films(path='', numner_pages=0):
     films_list = []
+    # Цикл по всем страницам с фильмами
     for page_num in range(1, numner_pages + 1):
         page = requests.get(path.format(page_num), headers=headers)
-        print(path.format(page_num))
         soup = BeautifulSoup(page.content, 'lxml')
         items = soup.find_all("div", {'class': 'name'})
         films_page = []
+        # Перебор всех фильмов на странице
         for item in items:
             title = item.find('a').text
             film_id = item.find('a').get('href').split('/')[-2]
-            flag = False
             films_page.append(get_film_info(title=title, film_id=film_id))
             add_in_db([films_page[-1]])
             time.sleep(12)
-
+        # Останавлиеваем чтобы не слишком часто обращаться к КП
         time.sleep(12)
 
         films_list.extend(films_page)
@@ -65,7 +67,7 @@ def get_film_info(title='', film_id=''):
             while c != 3:
                 film_info.append('No_genre')
                 c += 1
-    except:
+    except Exception:
         print('НЕ удалось', title)
         film_info = []
 
@@ -117,7 +119,7 @@ def get_all_info(film_id='447301'):
     info.append(soup.find("span", {'class': 'moviename-title-wrapper'}).text)
     try:
         info.append(float(soup.find("meta", {'itemprop': 'ratingValue'}).get('content')))
-    except:
+    except Exception:
         info.append(0.0)
     info.append(soup.find("td", {'itemprop': 'director'}).find('a').text)
     info.append(soup.find("div", {'itemprop': 'description'}).text)
@@ -136,6 +138,7 @@ def get_reviews(film_id='447301'):
     return reviews
 
 
+# Поиск фильма на КП
 def kp_film_find(title='начало'):
     kino_path = 'https://www.kinopoisk.ru/index.php?kp_query={}'.format(title)
     page = requests.get(kino_path, headers=headers)

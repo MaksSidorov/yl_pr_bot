@@ -4,6 +4,7 @@ import socks
 import socket
 from telegram_functions import *
 
+# Подключение через Тор браузер
 socks.set_default_proxy(socks.SOCKS5, "localhost", 9150)
 socket.socket = socks.socksocket
 
